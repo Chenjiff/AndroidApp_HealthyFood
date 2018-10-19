@@ -1,0 +1,211 @@
+# 中山大学数据科学与计算机学院本科生实验报告
+## （2018年秋季学期）
+| 课程名称 | 手机平台应用开发 | 任课老师 | 郑贵锋 |
+| :------: | :-------------: | :------------: | :-------------: |
+| 年级 | 2016级 | 专业（方向） | 软件工程 |
+| 学号 | 16340020 | 姓名 | 陈吉凡 |
+| 电话 | 15017239913 | Email | 1004920224@qq.com |
+| 开始日期 | 2018.9.29 | 完成日期 | 2018.10.10 |
+
+---
+
+## 一、实验题目
+Intent、Bundle的使用以及RecyclerView、ListView的应用
+
+---
+
+## 二、实现内容
+使用RecycleView和ListView控件实现要求的界面，并且实现短点击和长点击事件事件，并且还需要实现activity之间的数据传递。本次实验模拟实现一个健康食品列表，有两个界面，第一个界面用于呈现食品列表 如下所示  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/224625_f8aa78e2_2164918.jpeg "1.jpg")  
+数据在"manual/素材"目录下给出。
+点击右下方的悬浮按钮可以切换到收藏夹  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/224653_c4050d18_2164918.jpeg "2.jpg")  
+上面两个列表点击任意一项后，可以看到详细的信息：  
+![img3](https://images.gitee.com/uploads/images/2018/1019/224703_cccc4ba7_2164918.jpeg "3.jpg")  
+
+---
+
+## 三、课堂及课后实验结果
+### (1)实验截图
+* 食物列表界面：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225022_fc8b5cf3_2164918.png "4.png")  
+* 点击右下角按钮界面：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225131_90b03f8e_2164918.png "5.png")  
+* 长按食物列表某种食物进行删除：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225328_dfbb7ab6_2164918.png "6.png")  
+* 点击食物列表某种食物进入详情：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225450_644ecafb_2164918.png "7.png")  
+* 点击收藏按钮：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225541_2a1db3dd_2164918.png "8.png")  
+* 点击返回按钮返回界面并且进入收藏界面，可见牛奶已添加到收藏列表：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225657_98e2476a_2164918.png "9.png")  
+* 在收藏界面点击进入详情并点击取消收藏按钮：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225851_9f6bb59a_2164918.png "11.png")  
+* 返回收藏夹显示已被删除：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/225956_8b61a5fc_2164918.png "12.png")  
+* 在收藏夹界面长按某种食物：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/230051_7f0d7463_2164918.png "13.png")  
+* 点击确认进行删除：  
+![输入图片说明](https://images.gitee.com/uploads/images/2018/1019/230132_2c2181c9_2164918.png "14.png")  
+### (2)实验步骤以及关键代码
+1.首先实现食品列表界面的RecycleView，先添加依赖：
+```
+implementation 'com.android.support:recyclerview-v7:28.0.0'
+```   
+在activity的xml加入RecycleView控件:
+```
+<android.support.v7.widget.RecyclerView
+        android:id="@+id/food_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+```
+在java文件中对其设置LayoutManager`rv.setLayoutManager(new LinearLayoutManager(this));`，在设置adapter：这里要自己创建一个adapter类，`public  class FoodListAdapter extends RecyclerView.Adapter<FoodListViewHolder>`，其中的FoodListViewHolder是RecycleView要求创建的，主要用来放置view控件避免每次都要读取，内容我写的较简单：
+```
+public class FoodListViewHolder extends RecyclerView.ViewHolder {
+    Button food_icon;
+    TextView food_name;
+    public FoodListViewHolder(View _view) {
+        super(_view);
+        food_icon = (Button) _view.findViewById(R.id.food_icon);
+        food_name = (TextView) _view.findViewById(R.id.food_name);
+    }
+}
+```  
+在adapter中实现onCreateViewHolder函数，用于每次创建并返回ViewHolder：
+```
+@NonNull
+    @Override
+    public FoodListViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        FoodListViewHolder holder =
+                new FoodListViewHolder(LayoutInflater.from(context).inflate(R.layout.food_list_ltem, viewGroup, false));
+        return holder;
+    }
+```  
+再实现onBindViewHolder函数，用于将数据与ViewHolder绑定，并且将点击事件监听器绑定到控件上：
+```
+@Override
+    public void onBindViewHolder(final FoodListViewHolder viewHolder, int i) {
+        if(item_click_listener != null) {
+            viewHolder.food_name.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    item_click_listener.OnItemClick(viewHolder.getAdapterPosition());
+                }
+            });
+            viewHolder.food_name.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    item_click_listener.OnItemLongClick(viewHolder.getAdapterPosition());
+                    return true;
+                }
+            });
+        }
+        viewHolder.food_icon.setText(food_data.get(i).getType_simple());
+        viewHolder.food_name.setText(food_data.get(i).getName());
+    }
+```
+其中的事件监听器为自己定义的，之后实现OnItemClickListener接口，并调用setOnItemClickListener函数进行监听器绑定：
+```
+public interface OnItemClickListener {
+        void OnItemLongClick(int i);
+        void OnItemClick(int i);
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.item_click_listener = listener;
+    }
+```
+2.ListView与Recycle相差不多，并且无需创建自己的监听器，可选择使用他给的adapter，也可以选择自己创建，下面是我自己创建的adapter的主要函数：
+```
+@Override
+    public View getView(int i, View view, ViewGroup viewGroup){
+        ViewHolder view_holder;
+        if(view == null) {
+            view = LayoutInflater.from(context).inflate(R.layout.food_list_ltem,null);
+            view_holder = new ViewHolder();
+            view_holder.food_icon = view.findViewById(R.id.food_icon);
+            view_holder.food_name = view.findViewById(R.id.food_name);
+            view.setTag(view_holder);
+        }
+        else {
+            view_holder = (ViewHolder) view.getTag();
+        }
+        view_holder.food_icon.setText(data.get(i).getType_simple());
+        view_holder.food_name.setText(data.get(i).getName());
+        return view;
+    }
+```
+3.activity的切换。在食物列表项的点击事件监听器使用：
+```
+@Override
+    public void OnItemClick(int i) {
+        Food food = food_data.get(i);
+        Intent intent = new Intent(this, FoodDetail.class);
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("food", food);
+        Boolean if_collect = food_collect_data.contains(food);
+        bundle.putBoolean("if_collect", if_collect);
+        intent.putExtras(bundle);
+        current = i;
+        startActivityForResult(intent, 1);
+    }
+```
+另外一边接收：
+```
+Bundle ex = getIntent().getExtras();
+        if(ex != null) {
+            food = (Food) ex.getSerializable("food");
+            if_collect = ex.getBoolean("if_collect");
+        }
+```
+根据结果进行显示即可。在返回按钮中实现返回：
+```
+Bundle bundle = new Bundle();
+bundle.putBoolean("if_collect", if_collect);
+Intent intent = new Intent();
+intent.putExtras(bundle);
+setResult(1, intent);
+finish();
+```
+在第一个activity中接收返回数据（收藏信息）：
+```
+@Override
+    protected void onActivityResult(int rc, int resc, Intent intent) {
+        boolean if_collect = intent.getExtras().getBoolean("if_collect");
+        Food food = food_data.get(current);
+        if(if_collect) {
+            if(!food_collect_data.contains(food)) {
+                food_collect_data.add(food);
+                current = 0;
+                collect_adapter.notifyDataSetChanged();
+            }
+        }
+        else {
+            if(food_collect_data.contains(food)) {
+                food_collect_data.remove(food);
+                collect_adapter.notifyDataSetChanged();
+            }
+        }
+    }
+```
+### (3)实验遇到的困难以及解决思路
+1.实现ListView点击事件时，设置监听器无效。原因：含有的Button控件会夺取焦点，需要在上面加上
+```
+android:focusable="false"
+android:clickable="false"
+android:focusableInTouchMode="false"
+```  
+2.对FrameLayout和RelativeLayout很多设置的小错误很多。查完资料后，才知道FrameLayout只可以通过layout_gravity控制子控件位置，RelativeLayout子控件没有layout_gravity等。
+
+---
+
+
+## 四、实验思考及感想
+
+这次的代码量挺大的，花了很多时间，但是感觉是自己的思路不够清晰，知识体系不够完善，多花了很多时间，以后努力向理清总体结构，在进行各个击破的方向上走，从而不会在打完一个功能后，打乱了思路。
+---
+
+#### 作业要求
+* 命名要求：学号_姓名_实验编号，例如12345678_张三_lab1.md
+* 实验报告提交格式为md
+* 实验内容不允许抄袭，我们要进行代码相似度对比。如发现抄袭，按0分处理
